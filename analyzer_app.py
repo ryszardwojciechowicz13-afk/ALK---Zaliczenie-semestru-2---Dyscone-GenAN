@@ -125,6 +125,13 @@ ALIASES = {
 VALID_CHROMS = {str(i) for i in range(1, 23)} | {'X', 'Y', 'MT'}
 GT_RE = re.compile('^(?:\\d+|\\.)[\\/|](?:\\d+|\\.)$|^(?:\\d+|\\.)$')
 
+def norm_col(s):
+    return str(s).strip().lower().replace(' ', '_').replace('-', '_')
+
+def suggest_mapping(columns):
+    reverse = {norm_col(v): k for k, vals in ALIASES.items() for v in vals}
+    return {c: reverse.get(norm_col(c), '') for c in columns}
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 03/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 04/34")
 
