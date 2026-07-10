@@ -132,6 +132,15 @@ def suggest_mapping(columns):
     reverse = {norm_col(v): k for k, vals in ALIASES.items() for v in vals}
     return {c: reverse.get(norm_col(c), '') for c in columns}
 
+def normalize_chrom(v):
+    if pd.isna(v):
+        return pd.NA
+    s = str(v).strip()
+    if s.lower().startswith('chr'):
+        s = s[3:]
+    s = s.upper()
+    return 'MT' if s == 'M' else s
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 04/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 05/34")
 
