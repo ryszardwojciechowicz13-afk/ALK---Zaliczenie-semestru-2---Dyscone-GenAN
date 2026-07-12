@@ -141,6 +141,13 @@ def normalize_chrom(v):
     s = s.upper()
     return 'MT' if s == 'M' else s
 
+def normalize_gt(v):
+    if pd.isna(v):
+        return pd.NA
+    s = str(v).strip()
+    map_ = {'HET': '0/1', 'HETEROZYGOUS': '0/1', 'HETEROZYGOTA': '0/1', 'HOM': '1/1', 'HOMOZYGOUS': '1/1', 'HOMOZYGOTA': '1/1', 'WT': '0/0', 'WILDTYPE': '0/0'}
+    return map_.get(s.upper(), s)
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 05/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 06/34")
 
