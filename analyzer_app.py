@@ -148,6 +148,26 @@ def normalize_gt(v):
     map_ = {'HET': '0/1', 'HETEROZYGOUS': '0/1', 'HETEROZYGOTA': '0/1', 'HOM': '1/1', 'HOMOZYGOUS': '1/1', 'HOMOZYGOTA': '1/1', 'WT': '0/0', 'WILDTYPE': '0/0'}
     return map_.get(s.upper(), s)
 
+def zygosity(gt):
+    if pd.isna(gt):
+        return 'missing'
+    s = str(gt).strip()
+    if s in {'', '.', './.', '.|.'}:
+        return 'missing'
+    sep = '|' if '|' in s else '/' if '/' in s else None
+    if not sep:
+        return 'unknown'
+    p = s.split(sep)
+    if len(p) != 2 or '.' in p:
+        return 'missing'
+    if p[0] == p[1] == '0':
+        return 'homozygous_reference'
+    if p[0] == p[1] and p[0] != '0':
+        return 'homozygous_alternative'
+    if p[0] != p[1]:
+        return 'heterozygous'
+    return 'unknown'
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 06/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 07/34")
 
