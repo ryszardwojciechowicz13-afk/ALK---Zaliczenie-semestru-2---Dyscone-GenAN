@@ -168,6 +168,22 @@ def zygosity(gt):
         return 'heterozygous'
     return 'unknown'
 
+def variant_type(ref, alt):
+    if pd.isna(ref) or pd.isna(alt):
+        return 'unknown'
+    r, a = (str(ref).strip(), str(alt).strip())
+    if ',' in a:
+        return 'multiallelic'
+    if len(r) == 1 and len(a) == 1:
+        return 'SNV'
+    if len(r) < len(a):
+        return 'insertion'
+    if len(r) > len(a):
+        return 'deletion'
+    if len(r) == len(a) and len(r) > 1:
+        return 'MNV'
+    return 'complex'
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 07/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 08/34")
 
