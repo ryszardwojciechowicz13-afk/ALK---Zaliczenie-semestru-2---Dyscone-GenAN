@@ -184,6 +184,27 @@ def variant_type(ref, alt):
         return 'MNV'
     return 'complex'
 
+def standardize(df):
+    out = df.copy()
+    if 'chromosome' in out:
+        out['chromosome'] = out['chromosome'].map(normalize_chrom)
+    if 'gene' in out:
+        out['gene'] = out['gene'].astype('string').str.strip().str.upper()
+    if 'genotype' in out:
+        out['genotype'] = out['genotype'].map(normalize_gt)
+        out['zygosity'] = out['genotype'].map(zygosity)
+    if 'position' in out:
+        out['position'] = pd.to_numeric(out['position'], errors='coerce').astype('Int64')
+    for c in ['ref', 'alt']:
+        if c in out:
+            out[c] = out[c].astype('string').str.strip().str.upper()
+    for c in ['patient_id', 'sample_id', 'consequence', 'hgvs_c', 'hgvs_p', 'variant_id']:
+        if c in out:
+            out[c] = out[c].astype('string').str.strip()
+    if {'ref', 'alt'} <= set(out.columns):
+        out['variant_type'] = [variant_type(r, a) for r, a in zip(out['ref'], out['alt'])]
+    return out
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 08/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 09/34")
 
