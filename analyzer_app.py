@@ -205,6 +205,41 @@ def standardize(df):
         out['variant_type'] = [variant_type(r, a) for r, a in zip(out['ref'], out['alt'])]
     return out
 
+def read_vcf(path):
+    opener = gzip.open if str(path).lower().endswith('.gz') else open
+    rows, samples = ([], [])
+    with opener(path, 'rt', encoding='utf-8', errors='replace') as fh:
+        for line in fh:
+            if line.startswith('##'):
+                continue
+            if line.startswith('#CHROM'):
+                p = line.rstrip().split('\t')
+                samples = p[9:]
+                continue
+            if line.startswith('#') or not line.strip():
+                continue
+            p = line.rstrip().split('\t')
+            if len(p) < 8:
+                continue
+            chrom, pos, vid, ref, alt, qual, filt, info = p[:8]
+            info_map = {}
+            for tok in info.split(';'):
+                if '=' in tok:
+                    k, v = tok.split('=', 1)
+                    info_map[k] = v
+            gene = info_map.get('GENE') or info_map.get('SYMBOL') or info_map.get('Gene') or ''
+            cons = info_map.get('Consequence') or info_map.get('ANN') or info_map.get('CSQ') or ''
+            fmt = p[8].split(':') if len(p) > 8 else []
+            vals = p[9:] if len(p) > 9 else []
+            if vals:
+                for i, sv in enumerate(vals):
+                    fm = dict(zip(fmt, sv.split(':')))
+                    sid = samples[i] if i < len(samples) else f'sample_{i + 1}'
+                    rows.append({'patient_id': sid, 'sample_id': sid, 'gene': gene, 'chromosome': chrom, 'position': pos, 'ref': ref, 'alt': alt, 'genotype': fm.get('GT', ''), 'variant_id': '' if vid == '.' else vid, 'quality': '' if qual == '.' else qual, 'depth': fm.get('DP', ''), 'allele_depth': fm.get('AD', ''), 'filter': filt, 'consequence': cons})
+            else:
+                rows.append({'patient_id': '', 'sample_id': '', 'gene': gene, 'chromosome': chrom, 'position': pos, 'ref': ref, 'alt': alt, 'genotype': '', 'variant_id': '' if vid == '.' else vid, 'quality': '' if qual == '.' else qual, 'filter': filt, 'consequence': cons})
+    return pd.DataFrame(rows)
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 09/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 10/34")
 
