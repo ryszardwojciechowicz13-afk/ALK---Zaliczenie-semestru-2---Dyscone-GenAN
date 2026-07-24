@@ -240,6 +240,19 @@ def read_vcf(path):
                 rows.append({'patient_id': '', 'sample_id': '', 'gene': gene, 'chromosome': chrom, 'position': pos, 'ref': ref, 'alt': alt, 'genotype': '', 'variant_id': '' if vid == '.' else vid, 'quality': '' if qual == '.' else qual, 'filter': filt, 'consequence': cons})
     return pd.DataFrame(rows)
 
+def read_data(path, sheet_name=None):
+    p = Path(path)
+    n = p.name.lower()
+    if n.endswith('.vcf') or n.endswith('.vcf.gz'):
+        return read_vcf(p)
+    if p.suffix.lower() == '.csv':
+        return pd.read_csv(p, sep=None, engine='python')
+    if p.suffix.lower() in {'.tsv', '.txt'}:
+        return pd.read_csv(p, sep=None, engine='python')
+    if p.suffix.lower() in {'.xlsx', '.xls'}:
+        return pd.read_excel(p, sheet_name=sheet_name if sheet_name is not None else 0)
+    raise ValueError('Nieobsługiwany format pliku.')
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 10/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 11/34")
 
