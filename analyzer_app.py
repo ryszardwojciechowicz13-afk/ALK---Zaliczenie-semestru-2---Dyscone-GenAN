@@ -253,6 +253,31 @@ def read_data(path, sheet_name=None):
         return pd.read_excel(p, sheet_name=sheet_name if sheet_name is not None else 0)
     raise ValueError('Nieobsługiwany format pliku.')
 
+def excel_sheet_score(df):
+    mapped = suggest_mapping(df.columns)
+    recognized = {v for v in mapped.values() if v}
+    core = {'patient_id', 'gene', 'chromosome', 'position', 'ref', 'alt', 'genotype'}
+    return 10 * len(recognized & core) + len(recognized)
+
+def suggest_excel_sheet(path):
+    xls = pd.ExcelFile(path)
+    preferred = ['Genetic_Data_Clean', 'Genetic_Data_QC_Test', 'Clean_Data', 'Filtered_Data', 'Variants']
+    for name in preferred:
+        if name in xls.sheet_names:
+            return (name, xls.sheet_names)
+    best = None
+    best_score = -1
+    for name in xls.sheet_names:
+        try:
+            probe = pd.read_excel(path, sheet_name=name, nrows=10)
+            score = excel_sheet_score(probe)
+            if score > best_score:
+                best_score = score
+                best = name
+        except Exception:
+            pass
+    return (best or xls.sheet_names[0], xls.sheet_names)
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 11/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 12/34")
 
