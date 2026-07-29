@@ -278,6 +278,49 @@ def suggest_excel_sheet(path):
             pass
     return (best or xls.sheet_names[0], xls.sheet_names)
 
+def run_qc(df):
+    issues = []
+
+    def add(mask, code, severity, msg):
+        if mask is None:
+            return
+        mask = mask.fillna(False) if hasattr(mask, 'fillna') else mask
+        for idx in df.index[mask][:5000]:
+            issues.append({'row': idx, 'severity': severity, 'code': code, 'message': msg})
+    required = ['patient_id', 'chromosome', 'position', 'ref', 'alt']
+    missing_cols = [c for c in required if c not in df]
+    for c in required:
+        if c in df:
+            add(df[c].isna() | (df[c].astype('string').str.strip() == ''), f'MISSING_{c.upper()}', 'ERROR', f'Brak wartości: {c}')
+    if 'chromosome' in df:
+        c = df['chromosome'].map(normalize_chrom)
+        add(~c.isin(VALID_CHROMS) & c.notna(), 'INVALID_CHROMOSOME', 'ERROR', 'Nieprawidłowy chromosom')
+    if 'position' in df:
+        p = pd.to_numeric(df['position'], errors='coerce')
+        add(p.isna() | (p <= 0), 'INVALID_POSITION', 'ERROR', 'Nieprawidłowa pozycja genomowa')
+    if 'genotype' in df:
+        g = df['genotype'].map(normalize_gt).astype('string')
+        add(g.notna() & (g != '') & ~g.str.match(GT_RE, na=False), 'INVALID_GENOTYPE', 'WARNING', 'Nierozpoznany genotyp')
+    if {'ref', 'alt'} <= set(df.columns):
+        r = df['ref'].astype('string').str.upper().str.strip()
+        a = df['alt'].astype('string').str.upper().str.strip()
+        rx = '^[ACGTN*.-]+(?:,[ACGTN*.-]+)*$'
+        add(r.notna() & ~r.str.match(rx, na=False), 'INVALID_REF', 'ERROR', 'Nieprawidłowy REF')
+        add(a.notna() & ~a.str.match(rx, na=False), 'INVALID_ALT', 'ERROR', 'Nieprawidłowy ALT')
+        add((r == a) & r.notna(), 'REF_EQUALS_ALT', 'WARNING', 'REF i ALT są identyczne')
+    dupcols = [c for c in ['patient_id', 'chromosome', 'position', 'ref', 'alt', 'genotype'] if c in df]
+    if dupcols:
+        add(df.duplicated(dupcols, keep=False), 'DUPLICATE', 'WARNING', 'Potencjalny duplikat')
+    issues = pd.DataFrame(issues, columns=['row', 'severity', 'code', 'message'])
+    errors = int((issues['severity'] == 'ERROR').sum()) if len(issues) else 0
+    warnings = int((issues['severity'] == 'WARNING').sum()) if len(issues) else 0
+    miss = []
+    for c in df.columns:
+        m = int(df[c].isna().sum())
+        miss.append({'column': c, 'missing_count': m, 'missing_percent': 100 * m / max(len(df), 1)})
+    summary = {'rows': len(df), 'columns': len(df.columns), 'missing_required_columns': missing_cols, 'errors': errors, 'warnings': warnings, 'duplicate_rows': int(df.duplicated(dupcols, keep=False).sum()) if dupcols else 0, 'quality_score': max(0, 100 - 100 * (errors + 0.25 * warnings) / max(len(df), 1))}
+    return (summary, issues, pd.DataFrame(miss))
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 12/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 13/34")
 
