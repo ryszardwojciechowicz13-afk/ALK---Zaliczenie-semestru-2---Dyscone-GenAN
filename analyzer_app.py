@@ -321,6 +321,30 @@ def run_qc(df):
     summary = {'rows': len(df), 'columns': len(df.columns), 'missing_required_columns': missing_cols, 'errors': errors, 'warnings': warnings, 'duplicate_rows': int(df.duplicated(dupcols, keep=False).sum()) if dupcols else 0, 'quality_score': max(0, 100 - 100 * (errors + 0.25 * warnings) / max(len(df), 1))}
     return (summary, issues, pd.DataFrame(miss))
 
+def clean_data(df, opts):
+    out = df.copy()
+    log = []
+    if opts.get('trim'):
+        for c in out.select_dtypes(include=['object', 'string']).columns:
+            out[c] = out[c].astype('string').str.strip()
+        log.append('Usunięto zbędne spacje.')
+    if opts.get('na'):
+        out = out.replace('^\\s*$', pd.NA, regex=True).replace(['NA', 'N/A', 'NULL', 'None', 'none', '-', 'blank'], pd.NA)
+        log.append('Ujednolicono braki danych.')
+    if opts.get('std'):
+        out = standardize(out)
+        log.append('Wykonano standaryzację danych genetycznych.')
+    if opts.get('empty'):
+        n = len(out)
+        out = out.dropna(how='all')
+        log.append(f'Usunięto {n - len(out)} pustych rekordów.')
+    if opts.get('dups'):
+        subset = [c for c in ['patient_id', 'chromosome', 'position', 'ref', 'alt', 'genotype'] if c in out]
+        n = len(out)
+        out = out.drop_duplicates(subset=subset if subset else None)
+        log.append(f'Usunięto {n - len(out)} duplikatów.')
+    return (out.reset_index(drop=True), log)
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 13/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 14/34")
 
