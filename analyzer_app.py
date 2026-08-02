@@ -345,6 +345,12 @@ def clean_data(df, opts):
         log.append(f'Usunięto {n - len(out)} duplikatów.')
     return (out.reset_index(drop=True), log)
 
+def summary(df):
+    patients = df['patient_id'].nunique() if 'patient_id' in df else 0
+    genes = df['gene'].nunique() if 'gene' in df else 0
+    pp = df.groupby('patient_id').size() if 'patient_id' in df and len(df) else pd.Series(dtype=float)
+    return {'patients': int(patients), 'variants': len(df), 'genes': int(genes), 'mean': float(pp.mean()) if len(pp) else 0, 'median': float(pp.median()) if len(pp) else 0, 'min': int(pp.min()) if len(pp) else 0, 'max': int(pp.max()) if len(pp) else 0}
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 14/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 15/34")
 
