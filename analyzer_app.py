@@ -351,6 +351,14 @@ def summary(df):
     pp = df.groupby('patient_id').size() if 'patient_id' in df and len(df) else pd.Series(dtype=float)
     return {'patients': int(patients), 'variants': len(df), 'genes': int(genes), 'mean': float(pp.mean()) if len(pp) else 0, 'median': float(pp.median()) if len(pp) else 0, 'min': int(pp.min()) if len(pp) else 0, 'max': int(pp.max()) if len(pp) else 0}
 
+def top_genes(df, n=30):
+    if 'gene' not in df:
+        return pd.DataFrame(columns=['gene', 'patients', 'variants'])
+    g = df.dropna(subset=['gene']).groupby('gene')
+    out = g.size().rename('variants').to_frame()
+    out['patients'] = g['patient_id'].nunique() if 'patient_id' in df else 0
+    return out.reset_index().sort_values(['patients', 'variants'], ascending=False).head(n)
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 15/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 16/34")
 
