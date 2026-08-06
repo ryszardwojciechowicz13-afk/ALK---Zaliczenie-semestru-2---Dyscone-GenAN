@@ -359,6 +359,15 @@ def top_genes(df, n=30):
     out['patients'] = g['patient_id'].nunique() if 'patient_id' in df else 0
     return out.reset_index().sort_values(['patients', 'variants'], ascending=False).head(n)
 
+def top_variants(df, n=50):
+    cols = [c for c in ['chromosome', 'position', 'ref', 'alt'] if c in df]
+    if len(cols) < 4:
+        return pd.DataFrame()
+    g = df.groupby(cols, dropna=False)
+    out = g.size().rename('records').to_frame()
+    out['patients'] = g['patient_id'].nunique() if 'patient_id' in df else 0
+    return out.reset_index().sort_values(['patients', 'records'], ascending=False).head(n)
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 16/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 17/34")
 
