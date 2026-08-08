@@ -368,6 +368,33 @@ def top_variants(df, n=50):
     out['patients'] = g['patient_id'].nunique() if 'patient_id' in df else 0
     return out.reset_index().sort_values(['patients', 'records'], ascending=False).head(n)
 
+class PandasModel(QAbstractTableModel):
+
+    def __init__(self, df=None):
+        super().__init__()
+        self.df = df if df is not None else pd.DataFrame()
+
+    def set_df(self, df):
+        self.beginResetModel()
+        self.df = df if df is not None else pd.DataFrame()
+        self.endResetModel()
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self.df)
+
+    def columnCount(self, parent=QModelIndex()):
+        return len(self.df.columns)
+
+    def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole and index.isValid():
+            v = self.df.iat[index.row(), index.column()]
+            return '' if pd.isna(v) else str(v)
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role != Qt.DisplayRole:
+            return None
+        return str(self.df.columns[section]) if orientation == Qt.Horizontal else str(section + 1)
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 17/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 18/34")
 
