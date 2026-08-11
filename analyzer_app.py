@@ -395,6 +395,43 @@ class PandasModel(QAbstractTableModel):
             return None
         return str(self.df.columns[section]) if orientation == Qt.Horizontal else str(section + 1)
 
+class DataTable(QWidget):
+
+    def __init__(self, title=''):
+        super().__init__()
+        self.setObjectName('tableCard')
+        l = QVBoxLayout(self)
+        l.setContentsMargins(16, 14, 16, 16)
+        l.setSpacing(10)
+        header = QHBoxLayout()
+        header.setSpacing(8)
+        if title:
+            q = QLabel(title)
+            q.setObjectName('sectionTitle')
+            header.addWidget(q)
+        header.addStretch()
+        self.count_lbl = QLabel('0 rekordów')
+        self.count_lbl.setObjectName('mutedLabel')
+        header.addWidget(self.count_lbl)
+        l.addLayout(header)
+        self.view = QTableView()
+        self.model = PandasModel()
+        self.view.setModel(self.model)
+        self.view.setAlternatingRowColors(True)
+        self.view.setShowGrid(False)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.view.verticalHeader().setVisible(False)
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.view.horizontalHeader().setStretchLastSection(True)
+        l.addWidget(self.view)
+
+    def set_df(self, df, limit=1000):
+        base = df if df is not None else pd.DataFrame()
+        self.model.set_df(base.head(limit).copy())
+        shown = min(len(base), limit)
+        self.count_lbl.setText(f'{shown:,} / {len(base):,} rekordów'.replace(',', ' '))
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 18/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 19/34")
 
