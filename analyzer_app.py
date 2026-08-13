@@ -432,6 +432,23 @@ class DataTable(QWidget):
         shown = min(len(base), limit)
         self.count_lbl.setText(f'{shown:,} / {len(base):,} rekordów'.replace(',', ' '))
 
+class PlotCanvas(FigureCanvas):
+
+    def __init__(self):
+        self.fig = Figure(figsize=(8, 5), facecolor='#FFFFFF')
+        self.ax = self.fig.add_subplot(111)
+        super().__init__(self.fig)
+        self.setStyleSheet('background: transparent; border: none;')
+
+    def reset_axes(self):
+        self.fig.clear()
+        self.fig.set_facecolor('#FFFFFF')
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_facecolor('#FFFFFF')
+        self.ax.spines['top'].set_visible(False)
+        self.ax.spines['right'].set_visible(False)
+        return self.ax
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 19/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 20/34")
 
