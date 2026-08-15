@@ -449,6 +449,29 @@ class PlotCanvas(FigureCanvas):
         self.ax.spines['right'].set_visible(False)
         return self.ax
 
+class MainWindow(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(APP_TITLE)
+        self.resize(1540, 920)
+        self.setMinimumSize(1180, 720)
+        self.raw_df = self.clean_df = self.filtered_df = None
+        self.mapping = {}
+        self.source_path = ''
+        self.qc_summary = {}
+        self.qc_issues = pd.DataFrame()
+        self.missing_df = pd.DataFrame()
+        self.map_boxes = {}
+        self.nav_buttons = []
+        self.build_ui()
+        self.apply_modern_theme()
+        self.set_nav_index(0)
+        self.statusBar().showMessage('Gotowy — wczytaj dane, aby rozpocząć analizę.')
+
+    def apply_modern_theme(self):
+        self.setStyleSheet('\n            * { font-family: "Segoe UI", Arial, sans-serif; }\n            QMainWindow, QWidget#appRoot { background: #F5F7FB; color: #172033; }\n            QWidget#sidebar { background: #0F172A; }\n            QLabel#brandTitle { color: #F8FAFC; font-size: 20px; font-weight: 700; }\n            QLabel#brandSubtitle { color: #94A3B8; font-size: 11px; }\n            QLabel#sidebarSection { color: #64748B; font-size: 10px; font-weight: 700; letter-spacing: 1px; }\n            QPushButton#nav {\n                color: #CBD5E1; background: transparent; border: none; border-radius: 9px;\n                text-align: left; padding: 10px 12px; font-size: 13px; font-weight: 600;\n            }\n            QPushButton#nav:hover { background: #172033; color: #FFFFFF; }\n            QPushButton#nav:checked { background: #2563EB; color: #FFFFFF; }\n            QPushButton#sidebarAction {\n                background: #172033; color: #E2E8F0; border: 1px solid #334155; border-radius: 9px;\n                padding: 9px 12px; text-align: left; font-weight: 600;\n            }\n            QPushButton#sidebarAction:hover { background: #1E293B; border-color: #475569; }\n            QLabel#pageTitle { color: #111827; font-size: 25px; font-weight: 700; }\n            QLabel#pageSubtitle { color: #64748B; font-size: 12px; }\n            QLabel#sectionTitle { color: #1E293B; font-size: 14px; font-weight: 700; }\n            QLabel#mutedLabel { color: #64748B; font-size: 11px; }\n            QLabel#statusPill { background: #EFF6FF; color: #1D4ED8; border-radius: 8px; padding: 7px 10px; font-weight: 600; }\n            QFrame#metricCard, QGroupBox, QWidget#tableCard, QFrame#card {\n                background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;\n            }\n            QFrame#metricCard { min-height: 112px; }\n            QLabel#metricCaption { color: #64748B; font-size: 11px; font-weight: 600; }\n            QLabel#metricValue { color: #0F172A; font-size: 28px; font-weight: 700; }\n            QLabel#metricHint { color: #94A3B8; font-size: 10px; }\n            QGroupBox { font-weight: 700; padding-top: 14px; margin-top: 8px; }\n            QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 5px; color: #334155; }\n            QPushButton {\n                background: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; border-radius: 8px;\n                padding: 8px 13px; font-weight: 600;\n            }\n            QPushButton:hover { background: #F8FAFC; border-color: #94A3B8; }\n            QPushButton#primaryButton { background: #2563EB; color: #FFFFFF; border: 1px solid #2563EB; }\n            QPushButton#primaryButton:hover { background: #1D4ED8; border-color: #1D4ED8; }\n            QPushButton#successButton { background: #059669; color: #FFFFFF; border: 1px solid #059669; }\n            QPushButton#successButton:hover { background: #047857; }\n            QLineEdit, QComboBox, QSpinBox {\n                background: #FFFFFF; color: #172033; border: 1px solid #CBD5E1; border-radius: 8px;\n                padding: 7px 9px; min-height: 18px;\n            }\n            QLineEdit:focus, QComboBox:focus, QSpinBox:focus { border: 1px solid #3B82F6; }\n            QTextEdit { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 9px; padding: 7px; }\n            QProgressBar { background: #E2E8F0; border: none; border-radius: 5px; height: 9px; text-align: center; color: transparent; }\n            QProgressBar::chunk { background: #2563EB; border-radius: 5px; }\n            QTableView {\n                background: #FFFFFF; alternate-background-color: #F8FAFC; border: none; border-radius: 8px;\n                selection-background-color: #DBEAFE; selection-color: #172033;\n            }\n            QHeaderView::section {\n                background: #F1F5F9; color: #475569; padding: 8px; border: none; border-bottom: 1px solid #E2E8F0;\n                font-weight: 700; font-size: 11px;\n            }\n            QSplitter::handle { background: #E2E8F0; width: 1px; height: 1px; }\n            QScrollArea { background: transparent; border: none; }\n            QScrollBar:vertical { background: #F1F5F9; width: 10px; margin: 4px 2px 4px 2px; border-radius: 5px; }\n            QScrollBar::handle:vertical { background: #CBD5E1; min-height: 34px; border-radius: 5px; }\n            QScrollBar::handle:vertical:hover { background: #94A3B8; }\n            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }\n            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }\n            QCheckBox { spacing: 8px; }\n            QCheckBox::indicator { width: 17px; height: 17px; }\n            QStatusBar { background: #FFFFFF; color: #64748B; border-top: 1px solid #E2E8F0; }\n        ')
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 20/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 21/34")
 
