@@ -582,6 +582,37 @@ class MainWindow(QMainWindow):
         l.setSpacing(16)
         return l
 
+    def pg_dash(self):
+        w = QWidget()
+        l = self._page_layout(w)
+        l.addWidget(self.page_header('Dashboard', 'Szybki przegląd jakości i struktury aktualnie analizowanego zbioru danych.'))
+        r = QHBoxLayout()
+        r.setSpacing(12)
+        self.b1, self.m1 = self.make_metric_box('PACJENCI', 'unikalne identyfikatory')
+        self.b2, self.m2 = self.make_metric_box('REKORDY / WARIANTY', 'aktualny zbiór roboczy')
+        self.b3, self.m3 = self.make_metric_box('GENY', 'unikalne symbole genów')
+        self.b4, self.m4 = self.make_metric_box('JAKOŚĆ QC', 'wynik kontroli jakości')
+        for x in [self.b1, self.b2, self.b3, self.b4]:
+            r.addWidget(x)
+        l.addLayout(r)
+        chart = self.card()
+        cl = QVBoxLayout(chart)
+        cl.setContentsMargins(16, 14, 16, 12)
+        ch = QHBoxLayout()
+        tt = QLabel('Najczęstsze geny w kohorcie')
+        tt.setObjectName('sectionTitle')
+        ch.addWidget(tt)
+        ch.addStretch()
+        cl.addLayout(ch)
+        self.dplot = PlotCanvas()
+        cl.addWidget(self.dplot, 1)
+        l.addWidget(chart, 1)
+        self.dstatus = QLabel('Wczytaj dane, aby rozpocząć.')
+        self.dstatus.setObjectName('statusPill')
+        self.dstatus.setWordWrap(True)
+        l.addWidget(self.dstatus)
+        return w
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 23/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 24/34")
 
