@@ -661,6 +661,30 @@ class MainWindow(QMainWindow):
         l.addWidget(sp, 1)
         return w
 
+    def pg_qc(self):
+        w = QWidget()
+        l = self._page_layout(w)
+        l.addWidget(self.page_header('Kontrola jakości', 'Automatyczne wykrywanie braków, błędnych wartości, nieprawidłowych genotypów i duplikatów.'))
+        top = self.card()
+        tl = QHBoxLayout(top)
+        tl.setContentsMargins(16, 12, 16, 12)
+        b = self.primary('Uruchom kontrolę jakości', self.qc_ui)
+        self.qc_lbl = QLabel('QC nieuruchomione')
+        self.qc_lbl.setObjectName('statusPill')
+        tl.addWidget(b)
+        tl.addWidget(self.qc_lbl, 1)
+        l.addWidget(top)
+        self.qprog = QProgressBar()
+        self.qprog.setRange(0, 100)
+        l.addWidget(self.qprog)
+        sp = QSplitter(Qt.Vertical)
+        self.qtable = DataTable('Błędy i ostrzeżenia')
+        self.mtable = DataTable('Brakujące wartości')
+        sp.addWidget(self.qtable)
+        sp.addWidget(self.mtable)
+        l.addWidget(sp, 1)
+        return w
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 25/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 26/34")
 
