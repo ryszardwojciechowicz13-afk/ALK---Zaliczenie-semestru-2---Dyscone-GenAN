@@ -685,6 +685,39 @@ class MainWindow(QMainWindow):
         l.addWidget(sp, 1)
         return w
 
+    def pg_clean(self):
+        w = QWidget()
+        l = self._page_layout(w)
+        l.addWidget(self.page_header('Czyszczenie danych', 'Zastosuj bezpieczne, powtarzalne operacje czyszczenia bez modyfikowania oryginalnego pliku RAW.'))
+        g = QGroupBox('Opcje czyszczenia')
+        gl = QGridLayout(g)
+        gl.setContentsMargins(16, 18, 16, 14)
+        gl.setHorizontalSpacing(22)
+        gl.setVerticalSpacing(10)
+        self.c_trim = QCheckBox('Usuń zbędne spacje')
+        self.c_na = QCheckBox('Ujednolić braki danych')
+        self.c_std = QCheckBox('Standaryzuj dane')
+        self.c_empty = QCheckBox('Usuń puste rekordy')
+        self.c_dup = QCheckBox('Usuń duplikaty')
+        for c in [self.c_trim, self.c_na, self.c_std, self.c_empty, self.c_dup]:
+            c.setChecked(True)
+        for i, c in enumerate([self.c_trim, self.c_na, self.c_std, self.c_empty, self.c_dup]):
+            gl.addWidget(c, i // 3, i % 3)
+        l.addWidget(g)
+        bar = QHBoxLayout()
+        b = self.primary('Uruchom czyszczenie', self.clean_ui)
+        bar.addWidget(b)
+        bar.addStretch()
+        l.addLayout(bar)
+        self.clog = QTextEdit()
+        self.clog.setReadOnly(True)
+        self.clog.setMaximumHeight(120)
+        self.clog.setPlaceholderText('Dziennik operacji czyszczenia pojawi się tutaj.')
+        l.addWidget(self.clog)
+        self.ctable = DataTable('Wyczyszczone dane')
+        l.addWidget(self.ctable, 1)
+        return w
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 26/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 27/34")
 
