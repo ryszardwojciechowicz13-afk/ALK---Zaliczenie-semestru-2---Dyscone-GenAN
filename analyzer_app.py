@@ -718,6 +718,40 @@ class MainWindow(QMainWindow):
         l.addWidget(self.ctable, 1)
         return w
 
+    def pg_filter(self):
+        w = QWidget()
+        l = self._page_layout(w)
+        l.addWidget(self.page_header('Filtrowanie', 'Zawężaj dane po pacjencie, genie, chromosomie, zygotyczności, typie wariantu i dowolnej frazie.'))
+        g = QGroupBox('Filtry analityczne')
+        q = QGridLayout(g)
+        q.setContentsMargins(16, 18, 16, 14)
+        q.setHorizontalSpacing(12)
+        q.setVerticalSpacing(10)
+        self.fp = QComboBox()
+        self.fg = QComboBox()
+        self.fc = QComboBox()
+        self.fz = QComboBox()
+        self.ft = QComboBox()
+        self.fcons = QLineEdit()
+        self.fs = QLineEdit()
+        self.fcons.setPlaceholderText('np. missense')
+        self.fs.setPlaceholderText('np. ABCA4, rs123, P001')
+        fields = [('Pacjent', self.fp), ('Gen', self.fg), ('Chromosom', self.fc), ('Zygotyczność', self.fz), ('Typ wariantu', self.ft), ('Konsekwencja zawiera', self.fcons)]
+        for i, (lab, wd) in enumerate(fields):
+            q.addWidget(QLabel(lab), i // 3 * 2, i % 3)
+            q.addWidget(wd, i // 3 * 2 + 1, i % 3)
+        q.addWidget(QLabel('Wyszukiwanie globalne'), 4, 0)
+        q.addWidget(self.fs, 5, 0, 1, 2)
+        b = self.primary('Zastosuj filtry', self.filter_ui)
+        q.addWidget(b, 5, 2)
+        l.addWidget(g)
+        self.flbl = QLabel('Brak aktywnych filtrów.')
+        self.flbl.setObjectName('statusPill')
+        l.addWidget(self.flbl)
+        self.ftable = DataTable('Wyniki filtrowania')
+        l.addWidget(self.ftable, 1)
+        return w
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 27/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 28/34")
 
