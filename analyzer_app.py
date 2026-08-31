@@ -752,6 +752,54 @@ class MainWindow(QMainWindow):
         l.addWidget(self.ftable, 1)
         return w
 
+    def pg_patient(self):
+        w = QWidget()
+        l = self._page_layout(w)
+        l.addWidget(self.page_header('Pacjenci', 'Szczegółowy widok wariantów dla wybranego pacjenta.'))
+        top = self.card()
+        r = QHBoxLayout(top)
+        r.setContentsMargins(16, 12, 16, 12)
+        self.pc = QComboBox()
+        self.pc.setMinimumWidth(180)
+        self.pc.currentTextChanged.connect(self.patient_ui)
+        self.plbl = QLabel('Wybierz pacjenta.')
+        self.plbl.setObjectName('statusPill')
+        r.addWidget(QLabel('Pacjent'))
+        r.addWidget(self.pc)
+        r.addWidget(self.plbl, 1)
+        l.addWidget(top)
+        self.ptable = DataTable('Warianty pacjenta')
+        l.addWidget(self.ptable, 1)
+        return w
+
+    def pg_gene(self):
+        w = QWidget()
+        l = self._page_layout(w)
+        l.addWidget(self.page_header('Geny', 'Analiza występowania wariantów w obrębie wybranego genu.'))
+        top = self.card()
+        r = QHBoxLayout(top)
+        r.setContentsMargins(16, 12, 16, 12)
+        self.gc = QComboBox()
+        self.gc.setMinimumWidth(180)
+        self.gc.currentTextChanged.connect(self.gene_ui)
+        self.glbl = QLabel('Wybierz gen.')
+        self.glbl.setObjectName('statusPill')
+        r.addWidget(QLabel('Gen'))
+        r.addWidget(self.gc)
+        r.addWidget(self.glbl, 1)
+        l.addWidget(top)
+        self.gtable = DataTable('Warianty w genie')
+        l.addWidget(self.gtable, 1)
+        return w
+
+    def pg_variant(self):
+        w = QWidget()
+        l = self._page_layout(w)
+        l.addWidget(self.page_header('Warianty', 'Ranking najczęściej obserwowanych wariantów w aktualnym zbiorze.'))
+        self.vtable = DataTable('Najczęstsze warianty')
+        l.addWidget(self.vtable, 1)
+        return w
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 28/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 29/34")
 
