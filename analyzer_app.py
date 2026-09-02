@@ -910,6 +910,101 @@ class MainWindow(QMainWindow):
         l.addStretch()
         return w
 
+    def active(self):
+        return self.clean_df if self.clean_df is not None else self.raw_df
+
+    def import_ui(self):
+        p, _ = QFileDialog.getOpenFileName(self, 'Wczytaj dane', '', 'Dane (*.csv *.tsv *.txt *.xlsx *.xls *.vcf *.vcf.gz);;Wszystkie (*.*)')
+        if not p:
+            return
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            sheet_info = ''
+            if Path(p).suffix.lower() in {'.xlsx', '.xls'}:
+                suggested, sheets = suggest_excel_sheet(p)
+                QApplication.restoreOverrideCursor()
+                sheet, ok = QInputDialog.getItem(self, 'Wybierz arkusz danych', 'Arkusz do analizy:', sheets, sheets.index(suggested), False)
+                if not ok:
+                    return
+                QApplication.setOverrideCursor(Qt.WaitCursor)
+                self.raw_df = read_data(p, sheet_name=sheet)
+                sheet_info = f' | arkusz: {sheet}'
+            else:
+                self.raw_df = read_data(p)
+            self.clean_df = self.filtered_df = None
+            self.source_path = p
+            self.mapping = suggest_mapping(self.raw_df.columns)
+            self.file_lbl.setText(f'{Path(p).name}{sheet_info} | {len(self.raw_df):,} rekordów')
+            self.raw_table.set_df(self.raw_df, self.prev.value())
+            self.rebuild_map()
+            recognized = sum((1 for c in self.raw_df.columns if norm_col(c) in STANDARD_COLUMNS))
+            if recognized >= 5:
+                self.clean_df = standardize(self.raw_df)
+                self.ctable.set_df(self.clean_df, self.prev.value())
+                self.dstatus.setText('Dane rozpoznane i automatycznie standaryzowane. Możesz od razu generować wykresy.')
+            else:
+                self.dstatus.setText('Dane wczytane. Sprawdź mapowanie kolumn i zastosuj standaryzację.')
+            self.refresh_all()
+        except Exception as e:
+            QMessageBox.critical(self, 'Błąd importu', str(e))
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    def rebuild_map(self):
+        while self.map_form.rowCount() > 2:
+            self.map_form.removeRow(1)
+        self.map_boxes = {}
+        if self.raw_df is None:
+            return
+        for c in self.raw_df.columns:
+            x = QComboBox()
+            x.addItem('')
+            x.addItems(STANDARD_COLUMNS)
+            x.setCurrentText(self.mapping.get(c, ''))
+            x.setMinimumWidth(210)
+            x.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            self.map_form.insertRow(self.map_form.rowCount() - 1, str(c), x)
+            self.map_boxes[c] = x
+
+    def apply_mapping(self):
+        if self.raw_df is None:
+            return
+        self.mapping = {c: b.currentText() for c, b in self.map_boxes.items()}
+        rename = {c: v for c, v in self.mapping.items() if v}
+        out = self.raw_df.rename(columns=rename)
+        out = out.loc[:, ~out.columns.duplicated()]
+        self.clean_df = standardize(out)
+        self.ctable.set_df(self.clean_df, self.prev.value())
+        self.refresh_all()
+        QMessageBox.information(self, 'Mapowanie', 'Mapowanie i standaryzacja zostały zastosowane.')
+
+    def qc_ui(self):
+        df = self.active()
+        if df is None:
+            return
+        try:
+            self.qprog.setValue(20)
+            QApplication.processEvents()
+            self.qc_summary, self.qc_issues, self.missing_df = run_qc(df)
+            self.qprog.setValue(100)
+            self.qtable.set_df(self.qc_issues, self.prev.value())
+            self.mtable.set_df(self.missing_df, self.prev.value())
+            q = self.qc_summary
+            self.qc_lbl.setText(f"Rekordy: {q['rows']:,} | błędy: {q['errors']} | ostrzeżenia: {q['warnings']} | jakość: {q['quality_score']:.1f}%")
+            self.refresh_dash()
+        except Exception as e:
+            QMessageBox.critical(self, 'Błąd QC', str(e))
+
+    def clean_ui(self):
+        df = self.active()
+        if df is None:
+            return
+        self.clean_df, log = clean_data(df, {'trim': self.c_trim.isChecked(), 'na': self.c_na.isChecked(), 'std': self.c_std.isChecked(), 'empty': self.c_empty.isChecked(), 'dups': self.c_dup.isChecked()})
+        self.clog.setPlainText('\n'.join(log))
+        self.ctable.set_df(self.clean_df, self.prev.value())
+        self.qc_ui()
+        self.refresh_all()
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 30/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 31/34")
 
