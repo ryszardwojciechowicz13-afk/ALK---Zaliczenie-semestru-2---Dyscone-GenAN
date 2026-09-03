@@ -1005,6 +1005,98 @@ class MainWindow(QMainWindow):
         self.qc_ui()
         self.refresh_all()
 
+    def fill(self, combo, vals, all_=True):
+        combo.blockSignals(True)
+        combo.clear()
+        if all_:
+            combo.addItem('(wszystkie)')
+        for v in vals:
+            combo.addItem(str(v))
+        combo.blockSignals(False)
+
+    def refresh_controls(self):
+        df = self.active()
+        if df is None:
+            return
+        for c, col in [(self.fp, 'patient_id'), (self.fg, 'gene'), (self.fc, 'chromosome'), (self.fz, 'zygosity'), (self.ft, 'variant_type')]:
+            self.fill(c, sorted(df[col].dropna().astype(str).unique()) if col in df else [])
+        self.fill(self.pc, sorted(df['patient_id'].dropna().astype(str).unique()) if 'patient_id' in df else [], False)
+        self.fill(self.gc, sorted(df['gene'].dropna().astype(str).unique()) if 'gene' in df else [], False)
+        self.patient_ui(self.pc.currentText())
+        self.gene_ui(self.gc.currentText())
+
+    def filter_ui(self):
+        df = self.active()
+        if df is None:
+            return
+        out = df.copy()
+        fs = {'patient_id': self.fp.currentText(), 'gene': self.fg.currentText(), 'chromosome': self.fc.currentText(), 'zygosity': self.fz.currentText(), 'variant_type': self.ft.currentText()}
+        for col, val in fs.items():
+            if val and val != '(wszystkie)' and (col in out):
+                out = out[out[col].astype('string') == val]
+        if self.fcons.text() and 'consequence' in out:
+            out = out[out['consequence'].astype('string').str.contains(self.fcons.text(), case=False, na=False)]
+        if self.fs.text():
+            mask = pd.Series(False, index=out.index)
+            for c in out.columns:
+                mask |= out[c].astype('string').str.contains(self.fs.text(), case=False, na=False)
+            out = out[mask]
+        self.filtered_df = out
+        self.ftable.set_df(out, self.prev.value())
+        self.flbl.setText(f'Po filtrowaniu: {len(out):,} / {len(df):,}')
+
+    def patient_ui(self, p):
+        df = self.active()
+        if df is None or not p or 'patient_id' not in df:
+            return
+        sub = df[df['patient_id'].astype('string') == p]
+        self.plbl.setText(f"Rekordy: {len(sub)} | geny: {(sub['gene'].nunique() if 'gene' in sub else 0)} | heterozygotyczne: {(sub.get('zygosity', pd.Series(dtype=str)) == 'heterozygous').sum()} | homozygotyczne ALT: {(sub.get('zygosity', pd.Series(dtype=str)) == 'homozygous_alternative').sum()}")
+        self.ptable.set_df(sub, self.prev.value())
+
+    def gene_ui(self, g):
+        df = self.active()
+        if df is None or not g or 'gene' not in df:
+            return
+        sub = df[df['gene'].astype('string') == g]
+        keys = [c for c in ['chromosome', 'position', 'ref', 'alt'] if c in sub]
+        uv = len(sub.drop_duplicates(keys)) if keys else 0
+        self.glbl.setText(f"Pacjenci: {(sub['patient_id'].nunique() if 'patient_id' in sub else 0)} | rekordy: {len(sub)} | unikalne warianty: {uv}")
+        self.gtable.set_df(sub, self.prev.value())
+
+    def refresh_stats(self):
+        df = self.active()
+        if df is None:
+            return
+        s = summary(df)
+        self.stext.setPlainText(f"Pacjenci: {s['patients']}\nRekordy/warianty: {s['variants']}\nUnikalne geny: {s['genes']}\nŚrednia wariantów/pacjenta: {s['mean']:.2f}\nMediana: {s['median']:.2f}\nMinimum: {s['min']}\nMaksimum: {s['max']}")
+        self.stable.set_df(top_genes(df, 100), 100)
+        self.vtable.set_df(top_variants(df, 100), 100)
+
+    def refresh_dash(self):
+        df = self.active()
+        if df is None:
+            return
+        s = summary(df)
+        self.m1.setText(str(s['patients']))
+        self.m2.setText(f"{s['variants']:,}".replace(',', ' '))
+        self.m3.setText(str(s['genes']))
+        self.m4.setText(f"{self.qc_summary.get('quality_score', 0):.1f}%")
+        ax = self.dplot.reset_axes()
+        g = top_genes(df, 10).iloc[::-1]
+        if not g.empty:
+            ax.barh(g['gene'].astype(str), g['patients'])
+            ax.set_title('Najczęstsze geny — liczba pacjentów')
+            ax.set_xlabel('Liczba pacjentów')
+        else:
+            ax.text(0.5, 0.5, 'Brak danych do wykresu genów', ha='center', va='center', transform=ax.transAxes)
+        self.dplot.fig.tight_layout()
+        self.dplot.draw_idle()
+
+    def refresh_all(self):
+        self.refresh_controls()
+        self.refresh_stats()
+        self.refresh_dash()
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 31/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 32/34")
 
