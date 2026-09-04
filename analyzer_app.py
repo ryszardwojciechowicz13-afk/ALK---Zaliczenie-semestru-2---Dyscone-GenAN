@@ -1097,6 +1097,234 @@ class MainWindow(QMainWindow):
         self.refresh_stats()
         self.refresh_dash()
 
+    def plot_ui(self):
+        df = self.filtered_df if self.filtered_df is not None else self.active()
+        if df is None:
+            if hasattr(self, 'plot_status'):
+                self.plot_status.setText('Najpierw wczytaj dane.')
+            return
+        ax = self.plot.reset_axes()
+        typ = self.ptype.currentText()
+        source = 'dane filtrowane' if self.filtered_df is not None else 'pełny zbiór'
+        plotted = False
+        message = ''
+        try:
+            if typ == 'Najczęstsze geny':
+                if 'gene' not in df.columns:
+                    message = 'Brak kolumny gene. Zastosuj mapowanie kolumn.'
+                else:
+                    g = top_genes(df, 20).iloc[::-1]
+                    if g.empty:
+                        message = 'Brak niepustych wartości w kolumnie gene.'
+                    else:
+                        ax.barh(g['gene'].astype(str), g['patients'])
+                        ax.set_xlabel('Liczba pacjentów')
+                        ax.set_ylabel('Gen')
+                        plotted = True
+            elif typ == 'Warianty wg chromosomów':
+                if 'chromosome' not in df.columns:
+                    message = 'Brak kolumny chromosome. Zastosuj mapowanie kolumn.'
+                else:
+                    c = df['chromosome'].dropna().astype(str).value_counts()
+
+                    def chrom_key(x):
+                        x = x.replace('chr', '').upper()
+                        if x.isdigit():
+                            return (0, int(x))
+                        return (1, {'X': 23, 'Y': 24, 'MT': 25, 'M': 25}.get(x, 99))
+                    order = sorted(c.index, key=chrom_key)
+                    c = c.reindex(order)
+                    if c.empty:
+                        message = 'Brak danych chromosomowych.'
+                    else:
+                        ax.bar(c.index.astype(str), c.values)
+                        ax.set_xlabel('Chromosom')
+                        ax.set_ylabel('Liczba rekordów')
+                        plotted = True
+            elif typ == 'Typy wariantów':
+                if 'variant_type' not in df.columns and {'ref', 'alt'} <= set(df.columns):
+                    temp = df.copy()
+                    temp['variant_type'] = [variant_type(r, a) for r, a in zip(temp['ref'], temp['alt'])]
+                    df = temp
+                if 'variant_type' not in df.columns:
+                    message = 'Brak kolumn variant_type albo REF/ALT.'
+                else:
+                    c = df['variant_type'].dropna().astype(str).value_counts()
+                    if c.empty:
+                        message = 'Brak danych o typie wariantu.'
+                    else:
+                        ax.bar(c.index, c.values)
+                        ax.tick_params(axis='x', rotation=30)
+                        ax.set_ylabel('Liczba rekordów')
+                        plotted = True
+            elif typ == 'Zygotyczność':
+                if 'zygosity' not in df.columns and 'genotype' in df.columns:
+                    temp = df.copy()
+                    temp['zygosity'] = temp['genotype'].map(lambda x: zygosity(normalize_gt(x)))
+                    df = temp
+                if 'zygosity' not in df.columns:
+                    message = 'Brak kolumn zygosity albo genotype.'
+                else:
+                    c = df['zygosity'].dropna().astype(str).value_counts()
+                    if c.empty:
+                        message = 'Brak danych o zygotyczności.'
+                    else:
+                        ax.bar(c.index, c.values)
+                        ax.tick_params(axis='x', rotation=25)
+                        ax.set_ylabel('Liczba rekordów')
+                        plotted = True
+            elif typ == 'Warianty na pacjenta':
+                if 'patient_id' not in df.columns:
+                    message = 'Brak kolumny patient_id. Zastosuj mapowanie kolumn.'
+                else:
+                    c = df.dropna(subset=['patient_id']).groupby('patient_id').size().sort_values(ascending=False).head(50)
+                    if c.empty:
+                        message = 'Brak identyfikatorów pacjentów.'
+                    else:
+                        ax.bar(range(len(c)), c.values)
+                        ax.set_xticks(range(len(c)))
+                        ax.set_xticklabels(c.index.astype(str), rotation=90, fontsize=7)
+                        ax.set_xlabel('Pacjent')
+                        ax.set_ylabel('Liczba wariantów')
+                        plotted = True
+            elif typ == 'Heatmapa pacjent × gen':
+                if not {'patient_id', 'gene'} <= set(df.columns):
+                    message = 'Heatmapa wymaga kolumn patient_id i gene.'
+                else:
+                    valid = df.dropna(subset=['patient_id', 'gene']).copy()
+                    genes = valid['gene'].astype(str).value_counts().head(30).index
+                    valid = valid[valid['gene'].astype(str).isin(genes)]
+                    m = pd.crosstab(valid['patient_id'].astype(str), valid['gene'].astype(str)).head(50)
+                    if m.empty:
+                        message = 'Brak danych do utworzenia heatmapy.'
+                    else:
+                        im = ax.imshow(m.values, aspect='auto', interpolation='nearest')
+                        ax.set_xticks(range(len(m.columns)))
+                        ax.set_xticklabels(m.columns, rotation=90, fontsize=7)
+                        ax.set_yticks(range(len(m.index)))
+                        ax.set_yticklabels(m.index, fontsize=7)
+                        ax.set_xlabel('Gen')
+                        ax.set_ylabel('Pacjent')
+                        self.plot.fig.colorbar(im, ax=ax, fraction=0.025, pad=0.02, label='Liczba wariantów')
+                        plotted = True
+            if plotted:
+                ax.set_title(typ)
+                ax.grid(axis='y', alpha=0.18) if typ != 'Heatmapa pacjent × gen' else None
+                message = f'Wygenerowano: {typ} | źródło: {source} | rekordy: {len(df):,}'
+            else:
+                ax.text(0.5, 0.5, message or 'Brak danych do narysowania wykresu.', ha='center', va='center', wrap=True, transform=ax.transAxes, fontsize=11)
+                ax.set_axis_off()
+            self.plot.fig.tight_layout()
+            self.plot.draw_idle()
+            self.plot_status.setText(message)
+        except Exception as e:
+            ax = self.plot.reset_axes()
+            ax.text(0.5, 0.5, f'Błąd wykresu:\n{e}', ha='center', va='center', wrap=True, transform=ax.transAxes)
+            ax.set_axis_off()
+            self.plot.draw_idle()
+            self.plot_status.setText(f'Błąd generowania wykresu: {e}')
+            QMessageBox.critical(self, 'Błąd wykresu', str(e))
+
+    def save_plot(self):
+        p, _ = QFileDialog.getSaveFileName(self, 'Zapisz wykres', 'wykres.png', 'PNG (*.png)')
+        if p:
+            self.plot.fig.savefig(p, dpi=200, bbox_inches='tight')
+
+    def export_xlsx(self):
+        df = self.active()
+        if df is None:
+            return
+        p, _ = QFileDialog.getSaveFileName(self, 'Eksport Excel', 'analiza_genetyczna.xlsx', 'Excel (*.xlsx)')
+        if not p:
+            return
+        try:
+            with pd.ExcelWriter(p, engine='openpyxl') as w:
+                pd.DataFrame([self.qc_summary]).to_excel(w, sheet_name='Summary', index=False)
+                df.to_excel(w, sheet_name='Clean_Data', index=False)
+                (self.filtered_df if self.filtered_df is not None else df).to_excel(w, sheet_name='Filtered_Data', index=False)
+                self.qc_issues.to_excel(w, sheet_name='QC_Issues', index=False)
+                self.missing_df.to_excel(w, sheet_name='Missing_Data', index=False)
+                top_genes(df, 100).to_excel(w, sheet_name='Genes', index=False)
+                top_variants(df, 100).to_excel(w, sheet_name='Top_Variants', index=False)
+            QMessageBox.information(self, 'Eksport', 'Zapisano plik Excel.')
+        except Exception as e:
+            QMessageBox.critical(self, 'Błąd', str(e))
+
+    def export_csv(self):
+        df = self.filtered_df if self.filtered_df is not None else self.active()
+        if df is None:
+            return
+        p, _ = QFileDialog.getSaveFileName(self, 'Eksport CSV', 'dane_filtrowane.csv', 'CSV (*.csv)')
+        if p:
+            df.to_csv(p, index=False)
+
+    def export_pdf(self):
+        df = self.active()
+        if df is None:
+            return
+        p, _ = QFileDialog.getSaveFileName(self, 'Raport PDF', 'raport_genetyczny.pdf', 'PDF (*.pdf)')
+        if not p:
+            return
+        try:
+            s = summary(df)
+            g = top_genes(df, 20)
+            with PdfPages(p) as pdf:
+                fig = Figure(figsize=(8.27, 11.69))
+                ax = fig.add_subplot(111)
+                ax.axis('off')
+                txt = f"ConeDystrophy Genetic Analyzer\n\nRaport badawczo-analityczny\nNie stanowi automatycznej diagnozy klinicznej.\n\nPacjenci: {s['patients']}\nRekordy/warianty: {s['variants']}\nGeny: {s['genes']}\nŚrednia wariantów/pacjenta: {s['mean']:.2f}\nMediana: {s['median']:.2f}\n\nQC: błędy={self.qc_summary.get('errors', 0)}, ostrzeżenia={self.qc_summary.get('warnings', 0)}, jakość={self.qc_summary.get('quality_score', 0):.1f}%\n\nNajczęstsze geny:\n" + '\n'.join([f'{r.gene}: pacjenci={int(r.patients)}, rekordy={int(r.variants)}' for _, r in g.head(15).iterrows()])
+                ax.text(0.05, 0.95, txt, va='top', fontsize=10)
+                pdf.savefig(fig)
+                if not g.empty:
+                    fig2 = Figure(figsize=(11.69, 8.27))
+                    a = fig2.add_subplot(111)
+                    gg = g.head(15).iloc[::-1]
+                    a.barh(gg['gene'].astype(str), gg['patients'])
+                    a.set_title('Liczba pacjentów z wariantami w genach')
+                    fig2.tight_layout()
+                    pdf.savefig(fig2)
+            QMessageBox.information(self, 'Raport', 'Zapisano PDF.')
+        except Exception as e:
+            QMessageBox.critical(self, 'Błąd', str(e))
+
+    def save_project(self):
+        if self.raw_df is None:
+            return
+        d = QFileDialog.getExistingDirectory(self, 'Wybierz folder projektu')
+        if not d:
+            return
+        try:
+            Path(d).mkdir(parents=True, exist_ok=True)
+            self.raw_df.to_csv(Path(d) / 'raw_data.csv', index=False)
+            (self.clean_df if self.clean_df is not None else pd.DataFrame()).to_csv(Path(d) / 'clean_data.csv', index=False)
+            meta = {'mapping': self.mapping, 'source_path': self.source_path, 'genome_build': self.build.currentText(), 'preview_limit': self.prev.value()}
+            (Path(d) / 'project.json').write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding='utf-8')
+            QMessageBox.information(self, 'Projekt', 'Projekt zapisano.')
+        except Exception as e:
+            QMessageBox.critical(self, 'Błąd', str(e))
+
+    def load_project(self):
+        d = QFileDialog.getExistingDirectory(self, 'Wybierz folder projektu')
+        if not d:
+            return
+        try:
+            meta = json.loads((Path(d) / 'project.json').read_text(encoding='utf-8'))
+            self.raw_df = pd.read_csv(Path(d) / 'raw_data.csv')
+            cp = Path(d) / 'clean_data.csv'
+            self.clean_df = pd.read_csv(cp) if cp.exists() and cp.stat().st_size > 1 else None
+            self.mapping = meta.get('mapping', {})
+            self.source_path = meta.get('source_path', '')
+            self.build.setCurrentText(meta.get('genome_build', 'GRCh38'))
+            self.prev.setValue(int(meta.get('preview_limit', 1000)))
+            self.raw_table.set_df(self.raw_df, self.prev.value())
+            self.ctable.set_df(self.clean_df, self.prev.value())
+            self.file_lbl.setText(f'Projekt: {Path(d).name}')
+            self.rebuild_map()
+            self.refresh_all()
+            self.qc_ui()
+        except Exception as e:
+            QMessageBox.critical(self, 'Błąd', str(e))
+
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 32/34")
+    print("ConeDystrophy Genetic Analyzer - development stage 33/34")
 
