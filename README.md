@@ -1,31 +1,45 @@
-# Dyscone GenAN
+# ConeDystrophy Genetic Analyzer 1.0
 
-Dyscone GenAN to aplikacja desktopowa opracowana w języku Python w ramach projektu zaliczeniowego realizowanego na Akademii Leona Koźmińskiego (ALK) – II semestr.
+Gotowa aplikacja desktopowa w Pythonie/PySide6 do badawczej analizy danych genetycznych pacjentów z dystrofią czopków i pokrewnymi chorobami siatkówki.
 
-Autor: Ryszard Wojciechowicz
+## Co zawiera
+- import CSV, TSV, TXT, XLSX, XLS, VCF i VCF.GZ;
+- automatyczne sugerowanie mapowania kolumn oraz ręczna korekta;
+- zachowanie warstwy RAW oraz CLEAN;
+- standaryzację chromosomów, genów, genotypów, zygotyczności, REF/ALT i pozycji;
+- kontrolę jakości: braki, błędne chromosomy, pozycje, genotypy, REF/ALT i duplikaty;
+- czyszczenie danych z historią wykonanych operacji;
+- filtrowanie wg pacjenta, genu, chromosomu, zygotyczności, typu wariantu, konsekwencji oraz wyszukiwania globalnego;
+- analizę pojedynczego pacjenta i genu;
+- ranking wariantów i genów;
+- statystyki całego zbioru;
+- wykresy: geny, chromosomy, typy wariantów, zygotyczność, warianty/pacjent, heatmapa pacjent×gen;
+- eksport Excel, CSV, PNG i raport PDF;
+- lokalne zapisywanie i otwieranie projektu;
+- ustawienie GRCh38/GRCh37 i limitu podglądu.
 
-# Opis projektu
+## Uruchomienie w Windows
+Najprościej kliknij `run_windows.bat`. Przy pierwszym uruchomieniu zostanie utworzone środowisko `.venv` i zainstalowane biblioteki.
 
-Celem projektu jest stworzenie narzędzia wspomagającego analizę i organizację danych genetycznych dotyczących pacjentów z dystrofią czopków oraz innymi dziedzicznymi zaburzeniami siatkówki.
+Ręcznie:
+```bat
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
 
-Aplikacja została zaprojektowana z myślą o ujednoliceniu procesu importowania, porządkowania, kontroli jakości i analizy danych pochodzących z różnych źródeł. Dyscone GenAN umożliwia pracę z danymi wariantów genetycznych oraz ich prezentację w czytelnej formie tabelarycznej i graficznej.
+## Test
+Wczytaj `sample_data/synthetic_variants.csv`, następnie kliknij `Zastosuj mapowanie i standaryzację`, przejdź do `Kontrola jakości` i uruchom QC.
 
-# Główne założenia
+## Bezpieczeństwo
+Program działa lokalnie i samodzielnie nie wysyła danych do internetu. Do analiz zalecane są pseudonimizowane identyfikatory pacjentów. Program jest narzędziem badawczo-analitycznym i nie wykonuje automatycznej diagnozy klinicznej.
 
-Projekt obejmuje rozwój funkcjonalności pozwalających na:
+## VCF
+Wbudowany parser odczytuje podstawowe pola VCF oraz GT/DP/AD. Jeśli INFO zawiera `GENE`, `SYMBOL`, `Gene`, `Consequence`, `ANN` lub `CSQ`, program podejmuje próbę ich zachowania. Złożone adnotacje VEP/ANN można później rozbudować o parser zależny od konkretnego pipeline'u.
 
-- import danych genetycznych z różnych formatów plików,
-- standaryzację nazw i formatów danych,
-- kontrolę poprawności zaimportowanych rekordów,
-- identyfikację brakujących oraz nieprawidłowych wartości,
-- wykrywanie i usuwanie duplikatów,
-- normalizację oznaczeń chromosomów i genotypów,
-- analizę genów i wariantów genetycznych,
-- filtrowanie danych według wybranych kryteriów,
-- tworzenie podstawowych statystyk opisowych,
-- wizualizację wyników,
-- analizę danych w ujęciu pacjent–gen–wariant,
-- eksport przygotowanych zestawień i wyników analiz.
 
----
+## v1.4 — poprawka mapowania kolumn
 
+Zakładka „Import i mapowanie” posiada teraz osobny pionowo przewijany panel mapowania kolumn.
+Dzięki temu pola nie nachodzą na siebie przy dużej liczbie kolumn. Dodano też minimalną szerokość pól wyboru i nowoczesny pionowy scrollbar.

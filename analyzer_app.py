@@ -1326,5 +1326,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, 'Błąd', str(e))
 
 def run_app():
-    print("ConeDystrophy Genetic Analyzer - development stage 33/34")
-
+    app = QApplication(sys.argv)
+    w = MainWindow()
+    w.show()
+    sys.exit(app.exec())
